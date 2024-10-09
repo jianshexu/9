@@ -1,4 +1,4 @@
-python =3.9.13
+python ==3.9.13
 streamlit==1.38.0
 joblib>=1.2.0  # 更新版本
 numpy>=1.21.0  # 更新numpy版本
