@@ -1,12 +1,12 @@
-setuptools>=65.0.0  # 更新setuptools
-streamlit==1.38.0
-joblib==1.1.0  # 更新版本
-numpy==1.24.2 # 更新numpy版本
-pandas==1.4.4
-matplotlib==3.7.5
-xgboost==2.1.0
-scikit-learn==1.0.2
-shap==0.41.0
-wheel>=0.38.0  # 更新wheel
+setuptools
+streamlit
+joblib
+numpy
+pandas
+matplotlib
+xgboost
+scikit-learn
+shap
+wheel
 
 
