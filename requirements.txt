@@ -1,4 +1,4 @@
-python ==3.9.13
+setuptools>=65.0.0  # 更新setuptools
 streamlit==1.38.0
 joblib>=1.2.0  # 更新版本
 numpy>=1.21.0  # 更新numpy版本
@@ -7,7 +7,6 @@ matplotlib==3.7.5
 xgboost==2.1.0
 scikit-learn==1.0.2
 shap==0.41.0
-setuptools>=65.0.0  # 更新setuptools
 wheel>=0.38.0  # 更新wheel
 distutils
 
