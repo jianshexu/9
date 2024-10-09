@@ -8,3 +8,5 @@ scikit-learn==1.0.2
 shap==0.41.0
 setuptools>=65.0.0  # 更新setuptools
 wheel>=0.38.0  # 更新wheel
+distutils
+
