@@ -65,7 +65,8 @@ if st.button("预测"):
         shap_values = explainer(features)
 
         # 显示 SHAP 力图，解释概率
-        shap_plot = shap.plots.force(shap_values[0], show=False)
+        base_value = explainer.expected_value[0] if isinstance(explainer.expected_value, np.ndarray) else explainer.expected_value
+        shap_plot = shap.plots.force(base_value, shap_values[0, :, predicted_class], features, show=False)
         shap_html = f"<head>{shap.getjs()}</head><body>{shap_plot.html()}</body>"
 
         # 在 Streamlit 中显示 SHAP 力图
