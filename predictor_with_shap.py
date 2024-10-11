@@ -12,7 +12,7 @@ model = joblib.load('XGBoost.pkl')  # 请确保模型文件名和路径正确
 selected_features = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
 
 # 创建一个示例数据框架，只包含列名
-dummy_data = pd.DataFrame(columns=selected_features)
+dummy_data = pd.DataFrame(np.zeros((1, len(selected_features))), columns=selected_features)
 
 # 创建 SHAP Explainer
 explainer = shap.Explainer(model.predict_proba, dummy_data)
@@ -45,27 +45,30 @@ crrt = st.selectbox("持续性肾脏替代治疗 (CRRT):", options=list(crrt_opt
 u = st.number_input("尿素 (U):", min_value=0.0, max_value=200.0, value=5.0)
 l = st.number_input("淋巴细胞百分比 (L):", min_value=0.0, max_value=100.0, value=20.0)
 
-# 将用户输入的变量转换为模型输入格式，并确保所有数据类型为 float
-feature_values = [cons, ldh, mv, ast, crrt, u, l]
-features = pd.DataFrame([feature_values], columns=selected_features).astype(float)
+# 将用户输入的变量转换为模型输入格式，并确保所有数据类型为浮点数或整数
+feature_values = np.array([[cons, ldh, mv, ast, crrt, u, l]], dtype=float)
+features = pd.DataFrame(feature_values, columns=selected_features)
 
 # 当用户点击“预测”按钮时执行预测
 if st.button("预测"):
-    # 使用模型进行预测
-    predicted_proba = model.predict_proba(features)[0]
-    predicted_class = np.argmax(predicted_proba)
-    predicted_probability = predicted_proba[predicted_class]
-    
-    # 显示预测结果和概率
-    st.write(f"**预测结果:** {predicted_class}")
-    st.write(f"**预测概率:** {predicted_probability:.2%}")
+    try:
+        # 使用模型进行预测
+        predicted_proba = model.predict_proba(features)[0]
+        predicted_class = np.argmax(predicted_proba)
+        predicted_probability = predicted_proba[predicted_class]
+        
+        # 显示预测结果和概率
+        st.write(f"**预测结果:** {predicted_class}")
+        st.write(f"**预测概率:** {predicted_probability:.2%}")
 
-    # 计算 SHAP 值
-    shap_values = explainer(features)
+        # 计算 SHAP 值
+        shap_values = explainer(features)
 
-    # 显示 SHAP 力图，解释概率
-    shap_plot = shap.plots.force(shap_values[0], show=False)
-    shap_html = f"<head>{shap.getjs()}</head><body>{shap_plot.html()}</body>"
+        # 显示 SHAP 力图，解释概率
+        shap_plot = shap.plots.force(shap_values[0], show=False)
+        shap_html = f"<head>{shap.getjs()}</head><body>{shap_plot.html()}</body>"
 
-    # 在 Streamlit 中显示 SHAP 力图
-    components.html(shap_html, height=600)  # 调整高度以适应图表大小
+        # 在 Streamlit 中显示 SHAP 力图
+        components.html(shap_html, height=600)  # 调整高度以适应图表大小
+    except Exception as e:
+        st.error(f"预测过程中出现错误: {e}")
