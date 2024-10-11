@@ -11,10 +11,10 @@ model = joblib.load('XGBoost.pkl')  # 请确保模型文件名和路径正确
 # 定义特征名称
 selected_features = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
 
-# 创建一个示例数据框架，SHAP 需要它来了解特征的结构
+# 创建一个示例数据框架，只包含列名
 dummy_data = pd.DataFrame(columns=selected_features)
 
-# 创建 SHAP Explainer，不再需要训练数据
+# 创建 SHAP Explainer
 explainer = shap.Explainer(model.predict_proba, dummy_data)
 
 # 定义分类变量的选项
@@ -45,9 +45,9 @@ crrt = st.selectbox("持续性肾脏替代治疗 (CRRT):", options=list(crrt_opt
 u = st.number_input("尿素 (U):", min_value=0.0, max_value=200.0, value=5.0)
 l = st.number_input("淋巴细胞百分比 (L):", min_value=0.0, max_value=100.0, value=20.0)
 
-# 将用户输入的变量转换为模型输入格式
+# 将用户输入的变量转换为模型输入格式，并确保所有数据类型为 float
 feature_values = [cons, ldh, mv, ast, crrt, u, l]
-features = pd.DataFrame([feature_values], columns=selected_features)
+features = pd.DataFrame([feature_values], columns=selected_features).astype(float)
 
 # 当用户点击“预测”按钮时执行预测
 if st.button("预测"):
