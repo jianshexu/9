@@ -3,10 +3,10 @@ import joblib
 import numpy as np
 import pandas as pd
 import shap
-import matplotlib.pyplot as plt
+import streamlit.components.v1 as components
 
 # 加载预训练的模型
-model = joblib.load('XGBoost.pkl')  # 请将 'your_model.pkl' 替换为你的模型文件名
+model = joblib.load('XGBoost.pkl')  # 请将 'XGBoost.pkl' 替换为你的模型文件名
 
 # 定义分类变量的选项
 cons_options = {
@@ -51,9 +51,12 @@ if st.button("预测"):
     # 显示预测结果
     st.write(f"**预测结果:** {predicted_class}")
 
-    # 计算 SHAP 值并显示 force plot
+    # 计算 SHAP 值
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(pd.DataFrame([feature_values], columns=feature_names))
-    shap.force_plot(explainer.expected_value, shap_values[0], pd.DataFrame([feature_values], columns=feature_names), matplotlib=True)
-    plt.savefig("shap_force_plot.png", bbox_inches='tight', dpi=1200)
-    st.image("shap_force_plot.png")
+
+    # 使用 shap.plots.force 创建 SHAP 图表
+    shap_plot = shap.plots.force(explainer.expected_value[0], shap_values[0], pd.DataFrame([feature_values], columns=feature_names), matplotlib=True)
+
+    # 使用 st_shap 函数在 Streamlit 中显示 SHAP 图
+    st.pyplot(shap_plot, clear_figure=True)
