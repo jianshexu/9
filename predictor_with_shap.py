@@ -47,9 +47,11 @@ features = np.array([feature_values])
 if st.button("预测"):
     # 使用模型进行预测
     predicted_class = model.predict(features)[0]
+    predicted_proba = model.predict_proba(features)[0][predicted_class]
     
-    # 显示预测结果
+    # 显示预测结果和概率
     st.write(f"**预测结果:** {predicted_class}")
+    st.write(f"**预测概率:** {predicted_proba:.2%}")
 
     # 计算 SHAP 值
     explainer = shap.TreeExplainer(model)
