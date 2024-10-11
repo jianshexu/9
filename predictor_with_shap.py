@@ -11,8 +11,8 @@ model = joblib.load('XGBoost.pkl')  # 请确保模型文件名和路径正确
 # 定义特征名称
 selected_features = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
 
-# 创建 SHAP TreeExplainer
-explainer = shap.TreeExplainer(model)
+# 创建 SHAP Explainer，解释模型输出的概率
+explainer = shap.Explainer(model.predict_proba, pd.DataFrame(columns=selected_features))
 
 # 定义分类变量的选项
 cons_options = {
@@ -59,19 +59,25 @@ if st.button("预测"):
         st.write(f"**预测概率:** {predicted_probability:.2%}")
 
         # 计算 SHAP 值
-        shap_values = explainer.shap_values(features)
+        shap_values = explainer(features)
 
-        # 提取正类（类别1）的 SHAP 值
-        shap_values_positive_class = shap_values[1]
+        # 提取正类的 SHAP 值
+        shap_values_positive_class = shap_values[..., 1]
 
-        # 获取基准值（base value）用于正类
-        base_value = explainer.expected_value[1] if isinstance(explainer.expected_value, np.ndarray) else explainer.expected_value
+        # 获取第一个样本的 SHAP 力图
+        shap_plot = shap.force_plot(
+            base_value=shap_values[0].base_values[1],  # 使用正类的基准值
+            shap_values=shap_values_positive_class[0].values,  # 正类的 SHAP 值
+            features=features.iloc[0],  # 第一个样本的特征值
+            feature_names=selected_features,
+            matplotlib=True  # 使用 matplotlib 绘制
+        )
 
-        # 显示 SHAP 力图，解释正类的概率
-        shap_plot = shap.force_plot(base_value, shap_values_positive_class[0], features.iloc[0], show=False)
-        shap_html = f"<head>{shap.getjs()}</head><body>{shap_plot.html()}</body>"
+        # 将 SHAP 图保存为 PNG 文件
+        shap_plot.savefig("shap_force_plot.png", bbox_inches='tight', dpi=300)
 
-        # 在 Streamlit 中显示 SHAP 力图
-        components.html(shap_html, height=600)  # 调整高度以适应图表大小
+        # 在 Streamlit 中显示保存的图片
+        st.image("shap_force_plot.png")
+        
     except Exception as e:
         st.error(f"预测过程中出现错误: {e}")
