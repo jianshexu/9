@@ -6,7 +6,13 @@ import shap
 import streamlit.components.v1 as components
 
 # 加载预训练的模型
-model = joblib.load('XGBoost.pkl')  # 请将 'XGBoost.pkl' 替换为你的模型文件名
+model = joblib.load('XGBoost.pkl')  # 请确保模型文件名和路径正确
+
+# 假设 selected_features 是一个包含特征名称的列表
+selected_features = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
+
+# 创建 SHAP Explainer，直接解释概率输出
+explainer = shap.Explainer(model.predict_proba, X_train[selected_features])
 
 # 定义分类变量的选项
 cons_options = {
@@ -24,9 +30,6 @@ crrt_options = {
     1: '应用 (1)'     # Applied
 }
 
-# 定义特征名称
-feature_names = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
-
 # Streamlit 用户界面
 st.title("布尼亚预后")
 
@@ -41,25 +44,25 @@ l = st.number_input("淋巴细胞百分比 (L):", min_value=0.0, max_value=100.0
 
 # 将用户输入的变量转换为模型输入格式
 feature_values = [cons, ldh, mv, ast, crrt, u, l]
-features = np.array([feature_values])
+features = pd.DataFrame([feature_values], columns=selected_features)
 
 # 当用户点击“预测”按钮时执行预测
 if st.button("预测"):
     # 使用模型进行预测
-    predicted_class = model.predict(features)[0]
-    predicted_proba = model.predict_proba(features)[0][predicted_class]
+    predicted_proba = model.predict_proba(features)[0]
+    predicted_class = np.argmax(predicted_proba)
+    predicted_probability = predicted_proba[predicted_class]
     
     # 显示预测结果和概率
     st.write(f"**预测结果:** {predicted_class}")
-    st.write(f"**预测概率:** {predicted_proba:.2%}")
+    st.write(f"**预测概率:** {predicted_probability:.2%}")
 
     # 计算 SHAP 值
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(pd.DataFrame([feature_values], columns=feature_names))
+    shap_values = explainer(features)
 
-    # 直接使用 explainer.expected_value，因为它是一个标量
-    shap_plot = shap.plots.force(explainer.expected_value, shap_values[0], pd.DataFrame([feature_values], columns=feature_names), show=False)
-
-    # 将生成的 SHAP 力图 HTML 内容嵌入 Streamlit
+    # 显示 SHAP 力图，解释概率
+    shap_plot = shap.plots.force(shap_values[0], show=False)
     shap_html = f"<head>{shap.getjs()}</head><body>{shap_plot.html()}</body>"
-    components.html(shap_html, height=600)  # 调整高度为 600，使图表更清晰
+
+    # 在 Streamlit 中显示 SHAP 力图
+    components.html(shap_html, height=600)  # 调整高度以适应图表大小
