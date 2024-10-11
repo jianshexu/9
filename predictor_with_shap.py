@@ -55,8 +55,8 @@ if st.button("预测"):
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(pd.DataFrame([feature_values], columns=feature_names))
 
-    # 使用 shap.plots.force 创建 SHAP 力图
-    shap_plot = shap.plots.force(explainer.expected_value[0], shap_values[0], pd.DataFrame([feature_values], columns=feature_names), show=False)
+    # 直接使用 explainer.expected_value，因为它是一个标量
+    shap_plot = shap.plots.force(explainer.expected_value, shap_values[0], pd.DataFrame([feature_values], columns=feature_names), show=False)
 
     # 将生成的 SHAP 力图 HTML 内容嵌入 Streamlit
     shap_html = f"<head>{shap.getjs()}</head><body>{shap_plot.html()}</body>"
