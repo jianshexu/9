@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import shap
 import streamlit.components.v1 as components
+import matplotlib.pyplot as plt
 
 # 加载预训练的模型
 model = joblib.load('XGBoost.pkl')  # 请确保模型文件名和路径正确
@@ -42,9 +43,9 @@ crrt = st.selectbox("持续性肾脏替代治疗 (CRRT):", options=list(crrt_opt
 u = st.number_input("尿素 (U):", min_value=0.0, max_value=200.0, value=5.0)
 l = st.number_input("淋巴细胞百分比 (L):", min_value=0.0, max_value=100.0, value=20.0)
 
-# 将用户输入的变量转换为模型输入格式，并确保所有数据类型为浮点数或整数
+# 将用户输入的变量转换为模型输入格式，并确保所有数据类型为浮点数
 feature_values = np.array([[cons, ldh, mv, ast, crrt, u, l]], dtype=float)
-features = pd.DataFrame(feature_values, columns=selected_features)
+features = pd.DataFrame(feature_values, columns=selected_features).astype(float)
 
 # 当用户点击“预测”按钮时执行预测
 if st.button("预测"):
@@ -64,17 +65,15 @@ if st.button("预测"):
         # 提取正类的 SHAP 值
         shap_values_positive_class = shap_values[..., 1]
 
-        # 获取第一个样本的 SHAP 力图
-        shap_plot = shap.force_plot(
-            base_value=shap_values[0].base_values[1],  # 使用正类的基准值
-            shap_values=shap_values_positive_class[0].values,  # 正类的 SHAP 值
-            features=features.iloc[0],  # 第一个样本的特征值
+        # 显示 SHAP 力图，解释正类的概率
+        shap.force_plot(
+            shap_values[0].base_values[1],  # 使用正类的基准值
+            shap_values_positive_class[0].values,  # 正类的 SHAP 值
+            features.iloc[0],
             feature_names=selected_features,
-            matplotlib=True  # 使用 matplotlib 绘制
+            matplotlib=True
         )
-
-        # 将 SHAP 图保存为 PNG 文件
-        shap_plot.savefig("shap_force_plot.png", bbox_inches='tight', dpi=300)
+        plt.savefig("shap_force_plot.png", bbox_inches='tight', dpi=300)
 
         # 在 Streamlit 中显示保存的图片
         st.image("shap_force_plot.png")
