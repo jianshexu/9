@@ -8,11 +8,14 @@ import streamlit.components.v1 as components
 # 加载预训练的模型
 model = joblib.load('XGBoost.pkl')  # 请确保模型文件名和路径正确
 
-# 假设 selected_features 是一个包含特征名称的列表
+# 定义特征名称
 selected_features = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
 
-# 创建 SHAP Explainer，直接解释概率输出
-explainer = shap.Explainer(model.predict_proba, X_train[selected_features])
+# 创建一个示例数据框架，SHAP 需要它来了解特征的结构
+dummy_data = pd.DataFrame(columns=selected_features)
+
+# 创建 SHAP Explainer，不再需要训练数据
+explainer = shap.Explainer(model.predict_proba, dummy_data)
 
 # 定义分类变量的选项
 cons_options = {
