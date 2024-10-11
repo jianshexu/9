@@ -11,11 +11,8 @@ model = joblib.load('XGBoost.pkl')  # 请确保模型文件名和路径正确
 # 定义特征名称
 selected_features = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
 
-# 创建一个示例数据框架，只包含列名
-dummy_data = pd.DataFrame(np.zeros((1, len(selected_features))), columns=selected_features)
-
-# 创建 SHAP Explainer
-explainer = shap.Explainer(model.predict_proba, dummy_data)
+# 创建 SHAP TreeExplainer
+explainer = shap.TreeExplainer(model)
 
 # 定义分类变量的选项
 cons_options = {
@@ -62,11 +59,13 @@ if st.button("预测"):
         st.write(f"**预测概率:** {predicted_probability:.2%}")
 
         # 计算 SHAP 值
-        shap_values = explainer(features)
+        shap_values = explainer.shap_values(features)
+
+        # 获取基准值（base value），根据类别提取
+        base_value = explainer.expected_value[predicted_class]
 
         # 显示 SHAP 力图，解释概率
-        base_value = explainer.expected_value[0] if isinstance(explainer.expected_value, np.ndarray) else explainer.expected_value
-        shap_plot = shap.plots.force(base_value, shap_values[0, :, predicted_class], features, show=False)
+        shap_plot = shap.force_plot(base_value, shap_values[predicted_class][0], features.iloc[0], show=False)
         shap_html = f"<head>{shap.getjs()}</head><body>{shap_plot.html()}</body>"
 
         # 在 Streamlit 中显示 SHAP 力图
