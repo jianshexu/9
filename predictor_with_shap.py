@@ -11,11 +11,8 @@ model = joblib.load('XGBoost.pkl')  # 请确保模型文件名和路径正确
 # 定义特征名称
 selected_features = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
 
-# 创建一个示例数据框架，只包含列名（用于初始化 SHAP Explainer）
-dummy_data = pd.DataFrame(np.zeros((1, len(selected_features))), columns=selected_features)
-
-# 创建 SHAP Explainer，解释模型输出的概率
-explainer = shap.Explainer(model.predict_proba, dummy_data)
+# 创建 SHAP TreeExplainer
+explainer = shap.TreeExplainer(model)
 
 # 定义分类变量的选项
 cons_options = {
@@ -62,10 +59,10 @@ if st.button("预测"):
         st.write(f"**预测概率:** {predicted_probability:.2%}")
 
         # 计算 SHAP 值
-        shap_values = explainer(features)
+        shap_values = explainer.shap_values(features)
 
         # 提取正类（类别1）的 SHAP 值
-        shap_values_positive_class = shap_values[..., 1]
+        shap_values_positive_class = shap_values[1]
 
         # 获取基准值（base value）用于正类
         base_value = explainer.expected_value[1] if isinstance(explainer.expected_value, np.ndarray) else explainer.expected_value
