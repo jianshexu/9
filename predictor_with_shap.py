@@ -4,16 +4,24 @@ import numpy as np
 import pandas as pd
 import shap
 import streamlit.components.v1 as components
-import matplotlib.pyplot as plt
 
 # 加载预训练的模型
-model = joblib.load('XGBoost.pkl')  # 请确保模型文件名和路径正确
+model = joblib.load('XGBoost.pkl')  # 请将 'XGBoost.pkl' 替换为你的模型文件名
 
-# 定义特征名称
-selected_features = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
+# 定义标准化时使用的均值和标准差
+scaler_means = {
+    "AST": 233.68,
+    "LDH": 828.67,
+    "U": 6.67,
+    "L": 0.82
+}
 
-# 创建 SHAP Explainer，解释模型输出的概率
-explainer = shap.Explainer(model.predict_proba, pd.DataFrame(columns=selected_features))
+scaler_stds = {
+    "AST": 280.91,
+    "LDH": 715.69,
+    "U": 4.26,
+    "L": 0.63
+}
 
 # 定义分类变量的选项
 cons_options = {
@@ -31,6 +39,9 @@ crrt_options = {
     1: '应用 (1)'     # Applied
 }
 
+# 定义特征名称
+feature_names = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
+
 # Streamlit 用户界面
 st.title("布尼亚预后")
 
@@ -43,40 +54,34 @@ crrt = st.selectbox("持续性肾脏替代治疗 (CRRT):", options=list(crrt_opt
 u = st.number_input("尿素 (U):", min_value=0.0, max_value=200.0, value=5.0)
 l = st.number_input("淋巴细胞百分比 (L):", min_value=0.0, max_value=100.0, value=20.0)
 
-# 将用户输入的变量转换为模型输入格式，并确保所有数据类型为浮点数
-feature_values = np.array([[cons, ldh, mv, ast, crrt, u, l]], dtype=float)
-features = pd.DataFrame(feature_values, columns=selected_features).astype(float)
+# 将用户输入的变量转换为模型输入格式
+# 首先对连续变量进行标准化
+ldh_standardized = (ldh - scaler_means["LDH"]) / scaler_stds["LDH"]
+ast_standardized = (ast - scaler_means["AST"]) / scaler_stds["AST"]
+u_standardized = (u - scaler_means["U"]) / scaler_stds["U"]
+l_standardized = (l - scaler_means["L"]) / scaler_stds["L"]
+
+# 创建标准化后的特征数组
+feature_values = [cons, ldh_standardized, mv, ast_standardized, crrt, u_standardized, l_standardized]
+features = np.array([feature_values])
 
 # 当用户点击“预测”按钮时执行预测
 if st.button("预测"):
-    try:
-        # 使用模型进行预测
-        predicted_proba = model.predict_proba(features)[0]
-        predicted_class = np.argmax(predicted_proba)
-        predicted_probability = predicted_proba[predicted_class]
-        
-        # 显示预测结果和概率
-        st.write(f"**预测结果:** {predicted_class}")
-        st.write(f"**预测概率:** {predicted_probability:.2%}")
+    # 使用模型进行预测
+    predicted_probabilities = model.predict_proba(features)[0]
+    predicted_class = model.predict(features)[0]
 
-        # 计算 SHAP 值
-        shap_values = explainer(features)
+    # 显示预测结果（输出概率）
+    st.write(f"**预测类别:** {predicted_class}")
+    st.write(f"**预测概率 (阳性):** {predicted_probabilities[1]:.2f}")
+    st.write(f"**预测概率 (阴性):** {predicted_probabilities[0]:.2f}")
 
-        # 提取正类的 SHAP 值
-        shap_values_positive_class = shap_values[..., 1]
+    # 计算 SHAP 值
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(pd.DataFrame([feature_values], columns=feature_names))
 
-        # 显示 SHAP 力图，解释正类的概率
-        shap.force_plot(
-            shap_values[0].base_values[1],  # 使用正类的基准值
-            shap_values_positive_class[0].values,  # 正类的 SHAP 值
-            features.iloc[0],
-            feature_names=selected_features,
-            matplotlib=True
-        )
-        plt.savefig("shap_force_plot.png", bbox_inches='tight', dpi=300)
+    # 使用 shap.plots.force 创建 SHAP 图表
+    shap_plot = shap.plots.force(explainer.expected_value[0], shap_values[0], pd.DataFrame([feature_values], columns=feature_names), matplotlib=True)
 
-        # 在 Streamlit 中显示保存的图片
-        st.image("shap_force_plot.png")
-        
-    except Exception as e:
-        st.error(f"预测过程中出现错误: {e}")
+    # 使用 st.pyplot 函数在 Streamlit 中显示 SHAP 图
+    st.pyplot(shap_plot, clear_figure=True)
