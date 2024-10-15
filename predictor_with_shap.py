@@ -3,8 +3,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import shap
-import matplotlib.pyplot as plt
-import streamlit.components.v1 as components
+import streamlit.components.v1 as components  # 确保导入了streamlit组件模块
 
 # 加载预训练的模型
 model = joblib.load('XGBoost.pkl')  # 请将 'XGBoost.pkl' 替换为你的模型文件名
@@ -79,11 +78,15 @@ if st.button("预测"):
 
     # 计算 SHAP 值
     explainer = shap.TreeExplainer(model)
-    shap_values = explainer(pd.DataFrame([feature_values], columns=feature_names))
+    shap_values = explainer.shap_values(pd.DataFrame([feature_values], columns=feature_names))
 
-    # 使用 shap.plots.waterfall 创建 SHAP 瀑布图
-    plt.figure()
-    shap.plots.waterfall(shap_values[0], max_display=10)
-    
-    # 保存图像并显示在 Streamlit 中
-    st.pyplot(plt)
+    # 使用 shap.force_plot 创建 SHAP 力图，显示原始数值和预测概率
+    shap_plot = shap.force_plot(
+        explainer.expected_value[0], 
+        shap_values[0], 
+        pd.DataFrame([feature_values], columns=feature_names), 
+        matplotlib=True
+    )
+
+    # 渲染 SHAP 图并嵌入 Streamlit
+    components.html(shap_plot.html(), height=500)
