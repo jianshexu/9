@@ -78,10 +78,17 @@ if st.button("Predict"):
     explainer = shap.TreeExplainer(model)
     shap_values = explainer(pd.DataFrame([feature_values], columns=feature_names))
 
-    # 使用 shap.plots.waterfall 创建 SHAP 瀑布图，并且显示原始值
-    plt.figure()
-    shap_values_original = pd.DataFrame([[cons, ldh, mv, ast, crrt, u, l]], columns=feature_names)  # 原始值
-    shap.plots.waterfall(shap_values[0], feature_names=feature_names)
+    # 绘制 SHAP 瀑布图
+    shap_values_single = shap.Explanation(
+        values=shap_values.values[0],  # 提取第一个样本的 SHAP 值
+        base_values=shap_values.base_values[0],  # 提取第一个样本的基线值
+        data=np.array([cons, ldh, mv, ast, crrt, u, l]),  # 用原始输入数据绘图
+        feature_names=feature_names  # 特征名称
+    )
 
+    # 使用 shap.plots.waterfall 创建 SHAP 瀑布图，并显示原始值
+    plt.figure()
+    shap.plots.waterfall(shap_values_single, max_display=10)
+    
     # 保存图像并显示在 Streamlit 中
     st.pyplot(plt)
