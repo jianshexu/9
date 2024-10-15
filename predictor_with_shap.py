@@ -79,10 +79,11 @@ if st.button("预测"):
 
     # 计算 SHAP 值
     explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(pd.DataFrame([feature_values], columns=feature_names))
+    shap_values = explainer(pd.DataFrame([feature_values], columns=feature_names))
 
-    # 使用 shap.force_plot 创建 SHAP 力图
-    shap_plot = shap.force_plot(explainer.expected_value, shap_values[0], pd.DataFrame([feature_values], columns=feature_names))
-
-    # 渲染 SHAP 图并嵌入 Streamlit
-    components.html(shap_plot.html(), height=500)
+    # 使用 shap.plots.waterfall 创建 SHAP 瀑布图
+    plt.figure()
+    shap.plots.waterfall(shap_values[0], max_display=10)
+    
+    # 保存图像并显示在 Streamlit 中
+    st.pyplot(plt)
