@@ -1,9 +1,9 @@
-import shap  # 确保已经导入SHAP库
-import matplotlib.pyplot as plt
-import seaborn as sns
+import streamlit as st
+import joblib
 import numpy as np
 import pandas as pd
-import streamlit as st
+import shap
+import matplotlib.pyplot as plt
 
 # 加载预训练的模型
 model = joblib.load('XGBoost.pkl')  # 请将 'XGBoost.pkl' 替换为你的模型文件名
@@ -39,7 +39,7 @@ crrt_options = {
     1: 'Applied (1)'        # 应用
 }
 
-# 修改特征名称
+# 修改特征名称为全称
 feature_names = ['Consciousness', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
 
 # Streamlit 用户界面
@@ -83,16 +83,16 @@ if st.button("Predict"):
         values=shap_values.values[0],  # 提取第一个样本的 SHAP 值
         base_values=shap_values.base_values[0],  # 提取第一个样本的基线值
         data=np.array([consciousness, ldh, mv, ast, crrt, u, l]),  # 用原始输入数据绘图
-        feature_names=feature_names  # 特征名称
+        feature_names=feature_names  # 特征名称，已改为全称
     )
 
     # 使用 shap.plots.waterfall 创建 SHAP 瀑布图，并显示原始值
     plt.figure()
-    shap.plots.waterfall(shap_values_single, max_display=10, show=False)
+    shap.plots.waterfall(shap_values_single, max_display=10)
 
     # 保存图像并显示在 Streamlit 中
     st.pyplot(plt)
-
+    
     # 保存图像为文件
     plt.savefig("D:/desktop/B/结果/图片/shap_summary_plots.tiff", format="tiff", dpi=300, bbox_inches="tight")
 
