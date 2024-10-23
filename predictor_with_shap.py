@@ -5,10 +5,8 @@ import pandas as pd
 import shap
 import matplotlib.pyplot as plt
 
-# 加载预训练的模型
-model = joblib.load('XGBoost.pkl')  # 请将 'XGBoost.pkl' 替换为你的模型文件名
+model = joblib.load('XGBoost.pkl')
 
-# 定义标准化时使用的均值和标准差
 scaler_means = {
     "AST": 233.68,
     "LDH": 828.67,
@@ -23,29 +21,25 @@ scaler_stds = {
     "L": 0.63
 }
 
-# 定义分类变量的选项
 cons_options = {
-    0: 'No change in consciousness (0)',  # 意识没有改变
-    1: 'Change in consciousness (1)'      # 意识改变
+    0: 'No change in consciousness (0)',
+    1: 'Change in consciousness (1)'
 }
 
 mv_options = {
-    0: 'Not applied (0)',  # 未应用
-    1: 'Applied (1)'        # 应用
+    0: 'Not applied (0)',
+    1: 'Applied (1)'
 }
 
 crrt_options = {
-    0: 'Not applied (0)',  # 未应用
-    1: 'Applied (1)'        # 应用
+    0: 'Not applied (0)',
+    1: 'Applied (1)'
 }
 
-# 修改特征名称为全称
 feature_names = ['Consciousness', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
 
-# Streamlit 用户界面
 st.title("Bunyavirus Prognosis")
 
-# 获取用户输入
 consciousness = st.selectbox("Consciousness Status (Consciousness):", options=list(cons_options.keys()), format_func=lambda x: cons_options[x])
 ldh = st.number_input("Lactate Dehydrogenase (LDH, U/L):", min_value=0, max_value=5000, value=200)
 mv = st.selectbox("Mechanical Ventilation (MV):", options=list(mv_options.keys()), format_func=lambda x: mv_options[x])
@@ -54,47 +48,31 @@ crrt = st.selectbox("Continuous Renal Replacement Therapy (CRRT):", options=list
 u = st.number_input("Urea (mmol/L):", min_value=0.0, max_value=200.0, value=5.0)
 l = st.number_input("Lymphocyte Percentage (%):", min_value=0.0, max_value=100.0, value=20.0)
 
-# 将用户输入的变量转换为模型输入格式
-# 首先对连续变量进行标准化
 ldh_standardized = (ldh - scaler_means["LDH"]) / scaler_stds["LDH"]
 ast_standardized = (ast - scaler_means["AST"]) / scaler_stds["AST"]
 u_standardized = (u - scaler_means["U"]) / scaler_stds["U"]
 l_standardized = (l - scaler_means["L"]) / scaler_stds["L"]
 
-# 创建标准化后的特征数组
 feature_values = [consciousness, ldh_standardized, mv, ast_standardized, crrt, u_standardized, l_standardized]
 features = np.array([feature_values])
 
-# 当用户点击“预测”按钮时执行预测
 if st.button("Predict"):
-    # 使用模型进行预测
     predicted_probabilities = model.predict_proba(features)[0]
 
-    # 显示预测结果（只输出死亡概率）
     st.write(f"**Probability of Mortality:** {predicted_probabilities[1]:.2f}")
     st.write(f"**Decision threshold:** 0.22")
 
-    # 计算 SHAP 值
     explainer = shap.TreeExplainer(model)
     shap_values = explainer(pd.DataFrame([feature_values], columns=feature_names))
 
-    # 绘制 SHAP 瀑布图
     shap_values_single = shap.Explanation(
-        values=shap_values.values[0],  # 提取第一个样本的 SHAP 值
-        base_values=shap_values.base_values[0],  # 提取第一个样本的基线值
-        data=np.array([consciousness, ldh, mv, ast, crrt, u, l]),  # 用原始输入数据绘图
-        feature_names=feature_names  # 特征名称，已改为全称
+        values=shap_values.values[0],
+        base_values=shap_values.base_values[0],
+        data=np.array([consciousness, ldh, mv, ast, crrt, u, l]),
+        feature_names=feature_names
     )
 
-    # 使用 shap.plots.waterfall 创建 SHAP 瀑布图，并显示原始值
     plt.figure()
     shap.plots.waterfall(shap_values_single, max_display=10)
-
-    # 保存图像并显示在 Streamlit 中
     st.pyplot(plt)
-    
-    # 保存图像为文件
-    plt.savefig("D:/desktop/B/结果/图片/shap_summary_plots.tiff", format="tiff", dpi=300, bbox_inches="tight")
-
-    # 关闭图像
     plt.close()
