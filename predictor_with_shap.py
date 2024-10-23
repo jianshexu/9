@@ -1,9 +1,9 @@
-import streamlit as st
-import joblib
+import shap  # 确保已经导入SHAP库
+import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import pandas as pd
-import shap
-import matplotlib.pyplot as plt
+import streamlit as st
 
 # 加载预训练的模型
 model = joblib.load('XGBoost.pkl')  # 请将 'XGBoost.pkl' 替换为你的模型文件名
@@ -39,14 +39,14 @@ crrt_options = {
     1: 'Applied (1)'        # 应用
 }
 
-# 定义特征名称
-feature_names = ['CONS', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
+# 修改特征名称
+feature_names = ['Consciousness', 'LDH', 'MV', 'AST', 'CRRT', 'U', 'L']
 
 # Streamlit 用户界面
 st.title("Bunyavirus Prognosis")
 
 # 获取用户输入
-cons = st.selectbox("Consciousness Status (CONS):", options=list(cons_options.keys()), format_func=lambda x: cons_options[x])
+consciousness = st.selectbox("Consciousness Status (Consciousness):", options=list(cons_options.keys()), format_func=lambda x: cons_options[x])
 ldh = st.number_input("Lactate Dehydrogenase (LDH, U/L):", min_value=0, max_value=5000, value=200)
 mv = st.selectbox("Mechanical Ventilation (MV):", options=list(mv_options.keys()), format_func=lambda x: mv_options[x])
 ast = st.number_input("Aspartate Aminotransferase (AST, U/L):", min_value=0, max_value=5000, value=30)
@@ -62,7 +62,7 @@ u_standardized = (u - scaler_means["U"]) / scaler_stds["U"]
 l_standardized = (l - scaler_means["L"]) / scaler_stds["L"]
 
 # 创建标准化后的特征数组
-feature_values = [cons, ldh_standardized, mv, ast_standardized, crrt, u_standardized, l_standardized]
+feature_values = [consciousness, ldh_standardized, mv, ast_standardized, crrt, u_standardized, l_standardized]
 features = np.array([feature_values])
 
 # 当用户点击“预测”按钮时执行预测
@@ -82,13 +82,19 @@ if st.button("Predict"):
     shap_values_single = shap.Explanation(
         values=shap_values.values[0],  # 提取第一个样本的 SHAP 值
         base_values=shap_values.base_values[0],  # 提取第一个样本的基线值
-        data=np.array([cons, ldh, mv, ast, crrt, u, l]),  # 用原始输入数据绘图
+        data=np.array([consciousness, ldh, mv, ast, crrt, u, l]),  # 用原始输入数据绘图
         feature_names=feature_names  # 特征名称
     )
 
     # 使用 shap.plots.waterfall 创建 SHAP 瀑布图，并显示原始值
     plt.figure()
-    shap.plots.waterfall(shap_values_single, max_display=10)
-    
+    shap.plots.waterfall(shap_values_single, max_display=10, show=False)
+
     # 保存图像并显示在 Streamlit 中
     st.pyplot(plt)
+
+    # 保存图像为文件
+    plt.savefig("D:/desktop/B/结果/图片/shap_summary_plots.tiff", format="tiff", dpi=300, bbox_inches="tight")
+
+    # 关闭图像
+    plt.close()
